@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 import os
 
 
-
+load_dotenv()
+token = os.getenv('.env')
 
 
 bot = commands.Bot(command_prefix='!',help_command=None)
@@ -88,4 +89,4 @@ async def sp(ctx):
     
 
 
-bot.run('ODY3NzMzMzY0NjkzMjcwNTI4.YPlZqw.otAc3E8oJMBLp6kZKmc0sCrnfdA')
+bot.run(token)

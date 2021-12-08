@@ -1,4 +1,5 @@
 import discord
+from discord.embeds import Embed
 from discord.utils import get
 import youtube_dl
 import asyncio
@@ -56,12 +57,12 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
     async def create_source(cls, ctx, search: str, *, loop, download=False):
         loop = loop or asyncio.get_event_loop()
-        to_run = ytdl.extract_info(url=search, download=download)
-        print('**************************\n')
-        print(to_run)
-        print("\n*********************************")
+        to_run = partial(ytdl.extract_info, url=search, download=download)
+        em = discord.Embed(title='รอหน่อยนะ',description='คือเรากำลังจัดการกับเพลงอยู่อาจใช้เวลานานหน่อยนะ') 
+        text = await ctx.channel.send(embed=em)
         data = await loop.run_in_executor(None, to_run)
-        
+        await text.delete()
+
         if 'entries' in data:
             return{'data': data}
 
@@ -111,7 +112,6 @@ class MusicPlayer:
         ctx.bot.loop.create_task(self.player_loop())
 
     async def player_loop(self):
-        print("999999999999999999999999999999999999999999999999999")
         """Our main player loop."""
         await self.bot.wait_until_ready()
 
@@ -121,14 +121,12 @@ class MusicPlayer:
             try:
                 # Wait for the next song. If we timeout cancel the player and disconnect...
                 async with timeout(300):  # 5 minutes...
-                    print("6666666666666666666666")
                     source = await self.queue.get()
             except asyncio.TimeoutError:
                 del players[self._guild]
                 return await self.destroy(self._guild)
 
             if not isinstance(source, YTDLSource):
-                print("7777777777777777777777777777777777777")
                 # Source was probably a stream (not downloaded)
                 # So we should regather to prevent stream expiration
                 try:
@@ -139,13 +137,13 @@ class MusicPlayer:
                                              f'```css\n[{e}]\n```')
                     continue
 
-            print("8888888888888888888888888888888888888888")
             source.volume = self.volume
             self.current = source
 
             self._guild.voice_client.play(source, after=lambda _: self.bot.loop.call_soon_threadsafe(self.next.set))
-            self.np = await self._channel.send(f'**Now Playing:** `{source.title}` requested by '
-                                               f'`{source.requester}`')
+            em = discord.Embed(title='ตอนนี้เรากำลังเล่นเพลง',description=f'**`{source.title}`**\n'
+                                f'คนที่ขอให้เราเล่นเพลงนี้คือ`{source.requester}`')
+            self.np = await self._channel.send(embed=em)
             await self.next.wait()
 
             # Make sure the FFmpeg process is cleaned up.

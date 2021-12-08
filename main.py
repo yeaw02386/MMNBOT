@@ -1,15 +1,11 @@
 
 import discord
-from discord.utils import get
+
 from discord.ext import commands
 from song import songAPI 
 from dotenv import load_dotenv
 import os
-from keep import keep
 
-
-load_dotenv('.env')
-token = os.getenv('BOT_TOKEN')
 
 
 
@@ -23,6 +19,19 @@ async def on_ready():
     print(f"Logged in as {bot.user}")
 
 
+@bot.command()
+async def help(ctx):
+    em = discord.Embed(title='คำสั่งทั้งหมดนะ',description='ตัว prefix ของเราคือ ! นะ \nสำหรับคำสั่งที่เรามีนะ คือ')
+    em.add_field(name='p  หรือ play',value='บอกให้เราเปิดเพลง',inline=False)
+    em.add_field(name='sp หรือ skip',value='ให้เราข้ามเพลงที่กำลังเล่นอยู่',inline=False)
+    em.add_field(name='ls หรือ list',value='ให้เราบอกคิวเพลงที่มีอยู่ตอนนี้',inline=False)
+    em.add_field(name='pu หรือ pause',value='ให้เราหยุดเล่นเพลงก่อน',inline=False)
+    em.add_field(name='re หรือ resume',value='ให้เรากลับมาเล่นเพลงต่อ',inline=False)
+    em.add_field(name='cl หรือ clear',value='ให้เราลบคิวเพลงทั้งหมด',inline=False)
+    em.add_field(name='le หรือ leave',value='ไล่เราออกจากช่องเสียง',inline=False)
+    
+    
+    await ctx.channel.send(embed=em)
 
 @bot.command() 
 async def play(ctx,* ,search: str):
@@ -42,22 +51,41 @@ async def pause(ctx):
     await songsInstance.pause(ctx)
 
 @bot.command()
+async def pu(ctx):
+    await songsInstance.pause(ctx)
+
+@bot.command()
 async def resume(ctx):
     await songsInstance.resume(ctx)
 
 @bot.command()
-async def dis(ctx):
+async def re(ctx):
+    await songsInstance.resume(ctx)
+
+@bot.command()
+async def leave(ctx):
     await songsInstance.leave(ctx)
 
 @bot.command()
-async def queueList(ctx):
+async def le(ctx):
+    await songsInstance.leave(ctx)
+
+@bot.command()
+async def list(ctx):
+    await songsInstance.queueList(ctx)
+
+@bot.command()
+async def ls(ctx):
     await songsInstance.queueList(ctx)
 
 @bot.command()
 async def skip(ctx):
     await songsInstance.skip(ctx)
+
+@bot.command()
+async def sp(ctx):
+    await songsInstance.skip(ctx)
     
-keep()
 
 
-bot.run(token)
+bot.run('ODY3NzMzMzY0NjkzMjcwNTI4.YPlZqw.otAc3E8oJMBLp6kZKmc0sCrnfdA')

@@ -1,18 +1,14 @@
-
 import discord
-
 from discord.ext import commands
 from song import songAPI 
 from dotenv import load_dotenv
 import os
 
-
 load_dotenv()
-token = os.getenv('.env')
+token = os.getenv('TOKEN')
 
 
 bot = commands.Bot(command_prefix='!',help_command=None)
-
 songsInstance = songAPI()
 
 @bot.event
@@ -30,7 +26,6 @@ async def help(ctx):
     em.add_field(name='re หรือ resume',value='ให้เรากลับมาเล่นเพลงต่อ',inline=False)
     em.add_field(name='cl หรือ clear',value='ให้เราลบคิวเพลงทั้งหมด',inline=False)
     em.add_field(name='le หรือ leave',value='ไล่เราออกจากช่องเสียง',inline=False)
-    
     
     await ctx.channel.send(embed=em)
 

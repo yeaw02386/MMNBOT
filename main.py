@@ -18,7 +18,9 @@ async def on_ready():
 
 @bot.command()
 async def help(ctx):
-    em = discord.Embed(title='คำสั่งทั้งหมดนะ',description='ตัว prefix ของเราคือ ! นะ \nสำหรับคำสั่งที่เรามีนะ คือ')
+    em = discord.Embed(title='คำสั่งทั้งหมดนะ',
+    description='ตัว prefix ของเราคือ ! นะ \nสำหรับคำสั่งที่เรามีนะ คือ'
+    ,color=0xF90716)
     em.add_field(name='p  หรือ play',value='บอกให้เราเปิดเพลง',inline=False)
     em.add_field(name='sp หรือ skip',value='ให้เราข้ามเพลงที่กำลังเล่นอยู่',inline=False)
     em.add_field(name='ls หรือ list',value='ให้เราบอกคิวเพลงที่มีอยู่ตอนนี้',inline=False)

@@ -55,7 +55,8 @@ class YTDLSource(discord.PCMVolumeTransformer):
     async def create_source(cls, ctx, search: str, *, loop, download=False):
         loop = loop or asyncio.get_event_loop()
         to_run = partial(ytdl.extract_info, url=search, download=download)
-        em = discord.Embed(title='รอหน่อยนะ',description='คือเรากำลังจัดการกับเพลงอยู่อาจใช้เวลานานหน่อยนะ') 
+        em = discord.Embed(title='รอหน่อยนะ',description='คือเรากำลังจัดการกับเพลงอยู่อาจใช้เวลานานหน่อยนะ'
+        ,color=0xF90716) 
         text = await ctx.channel.send(embed=em)
         data = await loop.run_in_executor(None, to_run)
         await text.delete()
@@ -131,7 +132,7 @@ class MusicPlayer:
             self._guild.voice_client.play(source, after=lambda _: self.bot.loop.call_soon_threadsafe(self.next.set))
             nowplay = source.title
             em = discord.Embed(title='ตอนนี้เรากำลังเล่นเพลง',description=f'**`{source.title}`**\n'
-                                f'คนที่ขอให้เราเล่นเพลงนี้คือ`{source.requester}`')
+                                f'คนที่ขอให้เราเล่นเพลงนี้คือ`{source.requester}`',color=0xF90716)
             self.np = await self._channel.send(embed=em)
             await self.next.wait()
 
@@ -193,11 +194,11 @@ class songAPI:
     async def stop(self, ctx):
         voice_client = get(self.bot.voice_clients, guild=ctx.guild)
         if voice_client == None:
-            em = discord.Embed(title='เอ่อ ..เราทำไม่ได้ เพราะว่าเราไม่ได้อยู่ในห้องเสียงงงง')
+            em = discord.Embed(title='เอ่อ ..เราทำไม่ได้ เพราะว่าเราไม่ได้อยู่ในห้องเสียงงงง',color=0xF90716)
             return await ctx.send(embed=em)
 
         if voice_client.channel != ctx.author.voice.channel:
-            em = discord.Embed(title='เอ่อ ..คนสั่งไม่ได้อยู่ในห้องเสียงเดียวกันกับเรา')
+            em = discord.Embed(title='เอ่อ ..คนสั่งไม่ได้อยู่ในห้องเสียงเดียวกันกับเรา',color=0xF90716)
             return await ctx.send(embed=em)
 
         voice_client.stop()
@@ -205,11 +206,11 @@ class songAPI:
     async def pause(self, ctx):
         voice_client = get(self.bot.voice_clients, guild=ctx.guild)
         if voice_client == None:
-            em = discord.Embed(title='เอ่อ ..เราทำไม่ได้ เพราะว่าเราไม่ได้อยู่ในห้องเสียงงงง')
+            em = discord.Embed(title='เอ่อ ..เราทำไม่ได้ เพราะว่าเราไม่ได้อยู่ในห้องเสียงงงง',color=0xF90716)
             return await ctx.send(embed=em)
 
         if voice_client.channel != ctx.author.voice.channel:
-            em = discord.Embed(title='เอ่อ ..คนสั่งไม่ได้อยู่ในห้องเสียงเดียวกันกับเรา')
+            em = discord.Embed(title='เอ่อ ..คนสั่งไม่ได้อยู่ในห้องเสียงเดียวกันกับเรา',color=0xF90716)
             return await ctx.send(embed=em)
 
         voice_client.pause()
@@ -217,11 +218,11 @@ class songAPI:
     async def resume(self, ctx):
         voice_client = get(self.bot.voice_clients, guild=ctx.guild)
         if voice_client == None:
-            em = discord.Embed(title='เอ่อ ..เราทำไม่ได้ เพราะว่าเราไม่ได้อยู่ในห้องเสียงงงง')
+            em = discord.Embed(title='เอ่อ ..เราทำไม่ได้ เพราะว่าเราไม่ได้อยู่ในห้องเสียงงงง',color=0xF90716)
             return await ctx.send(embed=em)
 
         if voice_client.channel != ctx.author.voice.channel:
-            em = discord.Embed(title='เอ่อ ..คนสั่งไม่ได้อยู่ในห้องเสียงเดียวกันกับเรา')
+            em = discord.Embed(title='เอ่อ ..คนสั่งไม่ได้อยู่ในห้องเสียงเดียวกันกับเรา',color=0xF90716)
             return await ctx.send(embed=em)
 
         voice_client.resume()
@@ -229,19 +230,19 @@ class songAPI:
     async def leave(self, ctx):
         del self.players[ctx.guild.id]
         await ctx.voice_client.disconnect()
-        em = discord.Embed(title='ออกจากห้องแล้วนะ')
+        em = discord.Embed(title='ออกจากห้องแล้วนะ',color=0xF90716)
         return await ctx.send(embed=em)
 
     async def queueList(self, ctx):
         voice_client = get(self.bot.voice_clients, guild=ctx.guild)
 
         if voice_client == None or not voice_client.is_connected():
-            em = discord.Embed(title='เอ่อ ..เราทำไม่ได้ เพราะว่าเราไม่ได้อยู่ในห้องเสียงงงง')
+            em = discord.Embed(title='เอ่อ ..เราทำไม่ได้ เพราะว่าเราไม่ได้อยู่ในห้องเสียงงงง',color=0xF90716)
             return await ctx.send(embed=em)
         
         player = self.get_player(ctx)
         if player.queue.empty():
-            em = discord.Embed(title='ไม่มีคิวเพลงให้ดูอ่ะ')
+            em = discord.Embed(title='ไม่มีคิวเพลงให้ดูอ่ะ',color=0xF90716)
             return await ctx.send(embed=em)
 
         new = []
@@ -257,7 +258,7 @@ class songAPI:
         else : left = '\n\nมีแค่นี้แหละ'
         listsong = f'เพลงต่อไปจะเป็นเพลง\n'+'\n'.join(new) + left 
         
-        em = discord.Embed(title=f'คิวเพลงที่เรามีอยู่ เรียงตามนี้เลย', description=listsong)
+        em = discord.Embed(title=f'คิวเพลงที่เรามีอยู่ เรียงตามนี้เลย', description=listsong,color=0xF90716)
 
         await ctx.send(embed=em)
         
@@ -266,7 +267,7 @@ class songAPI:
         voice_client = get(self.bot.voice_clients, guild=ctx.guild)
 
         if voice_client == None or not voice_client.is_connected():
-            em = discord.Embed(title='เอ่อ ..เราทำไม่ได้ เพราะว่าเราไม่ได้อยู่ในห้องเสียงงงง')
+            em = discord.Embed(title='เอ่อ ..เราทำไม่ได้ เพราะว่าเราไม่ได้อยู่ในห้องเสียงงงง',color=0xF90716)
             return await ctx.send(embed=em)
 
         if voice_client.is_paused():
@@ -275,4 +276,5 @@ class songAPI:
             return
 
         voice_client.stop()
-        await ctx.send(f'**`{ctx.author}`** บอกให้เราข้ามเพลง')
+        em = discord.Embed(title=f'{ctx.author} บอกให้เราข้ามเพลง',color=0xF90716)
+        return await ctx.send(embed=em)

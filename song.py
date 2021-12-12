@@ -58,7 +58,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
         if 'entries' in data:
             return{'data': data}
-        print({'webpage_url': data['webpage_url'], 'requester': ctx.author, 'title': data['title']})
+
         return {'webpage_url': data['webpage_url'], 'requester': ctx.author, 'title': data['title']}
     
     @classmethod
@@ -107,8 +107,7 @@ class MusicPlayer:
             if not isinstance(source, YTDLSource):
                 try:
                     source = await YTDLSource.regather_stream(source, loop=self.bot.loop)
-                except Exception as e:
-                    print(e)
+                except Exception:
                     continue
 
             source.volume = self.volume
@@ -148,27 +147,40 @@ class songAPI:
         _player = self.get_player(ctx)
 
         if voice_client == None:
-            try : del self.players[ctx.guild.id]
-            except :pass
             await channel.connect()
             voice_client = get(self.bot.voice_clients, guild=ctx.guild)
 
         source = await YTDLSource.create_source(ctx, search, loop=self.bot.loop, download=False)
+        i = 0
+        addlist = []
         try:
-            i = 0
             data = source['data']
             while data['entries'][i] :
                 tempdata = data['entries'][i]
                 tempsource = {'webpage_url': tempdata['webpage_url'], 
                             'requester': ctx.author, 'title': tempdata['title']}
                 await _player.queue.put(tempsource)
-                print(tempdata['title'])
+                
+                if i <= 10 : 
+                    addlist.append(tempdata['title'])
                 i = i + 1
 
+        except: pass
+        try: 
+            if source['title'] :
+                await _player.queue.put(source)
+                addlist.append(source.get('title'))     
         except:
-            print(source)
-            await _player.queue.put(source)
+            pass
 
+        if i >= 10: left = f'\nและอีก `{i-10}` เพลง'
+        else : left = f'\n'
+
+        print(addlist)
+        listsong = '\n'.join(addlist) + left +'เข้าในคิวเพลงแล้วน้า'
+
+        em = discord.Embed(title='เพิ่มเพลง',description=listsong,color=0xF90716)
+        await ctx.channel.send(embed=em)
     
     def get_player(self, ctx):
         try:
@@ -189,7 +201,13 @@ class songAPI:
             em = discord.Embed(title='เอ่อ ..คนสั่งไม่ได้อยู่ในห้องเสียงเดียวกันกับเรา',color=0xF90716)
             return await ctx.send(embed=em)
 
+        if voice_client.is_paused() :
+            em = discord.Embed(title='เอ่อ.. เราพักเพลงไม่ได้อ่ะ เพราะเพลงมันพักอยู่แล้ว',color=0xF90716)
+            return await ctx.send(embed=em)
+
         voice_client.pause()
+        em = discord.Embed(title='เราพักเพลงแล้วนะ',color=0xF90716)
+        await ctx.send(embed=em)
 
     async def resume(self, ctx):
         voice_client = get(self.bot.voice_clients, guild=ctx.guild)
@@ -201,13 +219,19 @@ class songAPI:
             em = discord.Embed(title='เอ่อ ..คนสั่งไม่ได้อยู่ในห้องเสียงเดียวกันกับเรา',color=0xF90716)
             return await ctx.send(embed=em)
 
+        if voice_client.is_playing() :
+            em = discord.Embed(title='จะให้เราเล่นต่อได้ไงอ่ะ ก็ในเมื่อไม่ได้กดหยุดเพลงไว้',color=0xF90716)
+            return await ctx.send(embed=em)
+
         voice_client.resume()
+        em = discord.Embed(title='กลับมาเล่นต่อแล้ว',color=0xF90716)
+        await ctx.send(embed=em)
 
     async def leave(self, ctx):
         del self.players[ctx.guild.id]
         await ctx.voice_client.disconnect()
         em = discord.Embed(title='ออกจากห้องแล้วนะ',color=0xF90716)
-        return await ctx.send(embed=em)
+        await ctx.send(embed=em)
 
 
     async def queueList(self, ctx):
@@ -259,7 +283,11 @@ class songAPI:
     
     async def clear(self, ctx):
         player = self.get_player(ctx)
-        
+
+        if player.queue.empty():
+            em = discord.Embed(title=f'คือแบบ ..ไม่มีเพลงในคิวอ่ะ',color=0xF90716)
+            return await ctx.send(embed=em)
+
         while not player.queue.empty(): 
             player.queue.get_nowait()
 

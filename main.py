@@ -35,14 +35,9 @@ async def help(ctx):
 async def play(ctx,* ,search: str):
     await songsInstance.play(ctx, search)
 
-
 @bot.command() 
 async def p(ctx,* ,search: str):
     await songsInstance.play(ctx, search)
-
-@bot.command()
-async def stop(ctx):
-    await songsInstance.stop(ctx)
 
 @bot.command()
 async def pause(ctx):
@@ -83,6 +78,14 @@ async def skip(ctx):
 @bot.command()
 async def sp(ctx):
     await songsInstance.skip(ctx)
+
+@bot.command()
+async def clear(ctx):
+    await songsInstance.clear(ctx)
+
+@bot.command()
+async def cl(ctx):
+    await songsInstance.clear(ctx)
     
 
 

@@ -9,6 +9,8 @@ token = os.getenv('TOKEN')
 
 
 bot = commands.Bot(command_prefix='!',help_command=None)
+
+#นำเข้า class songAPI จาก ไฟล์ song
 songsInstance = songAPI()
 
 @bot.event

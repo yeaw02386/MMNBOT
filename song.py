@@ -9,6 +9,7 @@ import itertools
 
 youtube_dl.utils.bug_reports_message = lambda: ""
 
+
 ytdl_format_options = {
     "format": "bestaudio/best",
     "outtmpl": "%(extractor)s-%(id)s-%(title)s.%(ext)s",
@@ -43,7 +44,10 @@ class YTDLSource(discord.PCMVolumeTransformer):
     def __getitem__(self, item: str):
         return self.__getattribute__(item)
 
-    @classmethod
+    @classmethod 
+    
+    #รับข้อมูลจากฟังก์ชัน play แล้วแปลงข้อมูลที่ได้มาให้เป็นข้อมูลของเพลง
+    #แล้วส่งข้อมูลเพลงกลับคืน
     async def create_source(cls, ctx, search: str, *, loop, download=False):
         loop = loop or asyncio.get_event_loop()
         to_run = partial(ytdl.extract_info, url=search, download=download)
@@ -65,19 +69,6 @@ class YTDLSource(discord.PCMVolumeTransformer):
             "title": data["title"],
         }
 
-    @classmethod
-    async def regather_stream(cls, data, *, loop):
-        loop = loop or asyncio.get_event_loop()
-        requester = data["requester"]
-
-        to_run = partial(ytdl.extract_info, url=data["webpage_url"], download=False)
-        data = await loop.run_in_executor(None, to_run)
-
-        return cls(
-            discord.FFmpegPCMAudio(data["url"], **ffmpeg_options),
-            data=data,
-            requester=requester,
-        )
 
 
 class MusicPlayer:
@@ -111,6 +102,7 @@ class MusicPlayer:
 
         ctx.bot.loop.create_task(self.player_loop())
 
+    #loop เล่นเพลงที่อยู่ในคิว
     async def player_loop(self):
         await self.bot.wait_until_ready()
 
@@ -122,14 +114,6 @@ class MusicPlayer:
                     source = await self.queue.get()
             except asyncio.TimeoutError:
                 return await self.destroy()
-
-            if not isinstance(source, YTDLSource):
-                try:
-                    source = await YTDLSource.regather_stream(
-                        source, loop=self.bot.loop
-                    )
-                except Exception:
-                    continue
 
             source.volume = self.volume
             self.current = source
@@ -164,6 +148,8 @@ class songAPI:
     def __init__(self):
         self.players = {}
 
+    # รับ ข้อมูลจากผู้ใช้แล้วส่งข้อมูลไปให้ฟังก์ชัน create source แล้วนำข้อมูลที่ได้จากฟังก์ชัน create source
+    # ไปใส่ไว้ในคิว
     async def play(self, ctx, search: str):
         self.bot = ctx.bot
         self._guild = ctx.guild
@@ -217,6 +203,7 @@ class songAPI:
         em = discord.Embed(title="เพิ่มเพลง", description=listsong, color=0xF90716)
         await ctx.channel.send(embed=em)
 
+    #รับข้อมูลของแต่ละเซิฟเวอร์
     def get_player(self, ctx):
         try:
             player = self.players[ctx.guild.id]
@@ -226,6 +213,7 @@ class songAPI:
 
         return player
 
+    #พักที่เพลงกำลังเล่นอยู่
     async def pause(self, ctx):
         voice_client = get(self.bot.voice_clients, guild=ctx.guild)
         if voice_client == None:
@@ -252,6 +240,7 @@ class songAPI:
         em = discord.Embed(title="เราพักเพลงแล้วนะ", color=0xF90716)
         await ctx.send(embed=em)
 
+    #เล่นเพลงที่พักอยู่
     async def resume(self, ctx):
         voice_client = get(self.bot.voice_clients, guild=ctx.guild)
         if voice_client == None:
@@ -278,12 +267,14 @@ class songAPI:
         em = discord.Embed(title="กลับมาเล่นต่อแล้ว", color=0xF90716)
         await ctx.send(embed=em)
 
+    #เตะบอทออกจากห้องเลียง
     async def leave(self, ctx):
         del self.players[ctx.guild.id]
         await ctx.voice_client.disconnect()
         em = discord.Embed(title="ออกจากห้องแล้วนะ", color=0xF90716)
         await ctx.send(embed=em)
 
+    #แสดงคิวเพลงที่มีอยู่
     async def queueList(self, ctx):
         voice_client = get(self.bot.voice_clients, guild=ctx.guild)
 
@@ -323,6 +314,7 @@ class songAPI:
 
         await ctx.send(embed=em)
 
+    #ข้ามเพลงที่กำลังเล่นอยู่
     async def skip(self, ctx):
         voice_client = get(self.bot.voice_clients, guild=ctx.guild)
 
@@ -346,6 +338,7 @@ class songAPI:
         )
         return await ctx.send(embed=em)
 
+    #ลบคิวเพลงที่มี
     async def clear(self, ctx):
         player = self.get_player(ctx)
 

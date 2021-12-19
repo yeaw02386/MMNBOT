@@ -213,7 +213,7 @@ class songAPI:
 
         return player
 
-    #พักที่เพลงกำลังเล่นอยู่
+    #พักเพลงที่กำลังเล่นอยู่
     async def pause(self, ctx):
         voice_client = get(self.bot.voice_clients, guild=ctx.guild)
         if voice_client == None:

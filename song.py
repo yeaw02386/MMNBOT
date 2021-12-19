@@ -301,7 +301,7 @@ class songAPI:
 
         new = []
         upcoming = list(itertools.islice(player.queue._queue, 0, player.queue.qsize()))
-        for i in range(len(upcoming) - 1):
+        for i in range(len(upcoming)):
             item = upcoming[i]
             new.append(item.get("title"))
             print(item.get("title"))

@@ -8,7 +8,7 @@ load_dotenv()
 token = os.getenv('TOKEN')
 
 
-bot = commands.Bot(command_prefix='!',help_command=None)
+bot = commands.Bot(command_prefix='-',help_command=None)
 songsInstance = songAPI()
 
 @bot.event

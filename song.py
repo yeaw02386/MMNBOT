@@ -6,6 +6,7 @@ import asyncio
 from async_timeout import timeout
 from functools import partial
 import itertools
+import ytapi
 
 youtube_dl.utils.bug_reports_message = lambda: ""
 
@@ -44,31 +45,40 @@ class YTDLSource(discord.PCMVolumeTransformer):
     def __getitem__(self, item: str):
         return self.__getattribute__(item)
 
-    @classmethod 
     
     #รับข้อมูลจากฟังก์ชัน play แล้วแปลงข้อมูลที่ได้มาให้เป็นข้อมูลของเพลง
     #แล้วส่งข้อมูลเพลงกลับคืน
+    @classmethod 
     async def create_source(cls, ctx, search: str, *, loop, download=False):
         loop = loop or asyncio.get_event_loop()
-        to_run = partial(ytdl.extract_info, url=search, download=download)
-        em = discord.Embed(
-            title="รอหน่อยนะ",
-            description="คือเรากำลังจัดการกับเพลงอยู่อาจใช้เวลานานหน่อยนะ",
-            color=0xF90716,
-        )
-        text = await ctx.channel.send(embed=em)
-        data = await loop.run_in_executor(None, to_run)
-        await text.delete()
+        
+        if 'list=' in search:
+            playlistid = search.split('=',1)
+            playlistid =playlistid[1]
+            to_run = partial(ytapi.yt_playlist,playlistid,ctx.author)
+            data = await loop.run_in_executor(None, to_run)
+            return data
 
-        if "entries" in data:
-            return {"data": data}
+
+        to_run = partial(ytdl.extract_info, url=search, download=download)
+        data = await loop.run_in_executor(None, to_run)
 
         return {
             "webpage_url": data["webpage_url"],
             "requester": ctx.author,
-            "title": data["title"],
+            "title": data["title"]
         }
 
+    #สร้างข้อมูลในการ streaming เพลง
+    @classmethod
+    async def stream(cls, data, *, loop):
+        loop = loop or asyncio.get_event_loop()
+        requester = data['requester']
+
+        to_run = partial(ytdl.extract_info, url=data['webpage_url'], download=False)
+        data = await loop.run_in_executor(None, to_run)
+
+        return cls(discord.FFmpegPCMAudio(data['url'], **ffmpeg_options), data=data, requester=requester)
 
 
 class MusicPlayer:
@@ -77,7 +87,6 @@ class MusicPlayer:
         "bot",
         "_guild",
         "_channel",
-        "id",
         "_cog",
         "queue",
         "next",
@@ -90,7 +99,6 @@ class MusicPlayer:
         self.bot = ctx.bot
         self._guild = ctx.guild
         self._channel = ctx.channel
-        self.id = ctx.guild.id
         self._cog = ctx.cog
 
         self.queue = asyncio.Queue()
@@ -115,6 +123,7 @@ class MusicPlayer:
             except asyncio.TimeoutError:
                 return await self.destroy()
 
+            source = await YTDLSource.stream(source, loop=self.bot.loop)
             source.volume = self.volume
             self.current = source
 
@@ -167,22 +176,13 @@ class songAPI:
         i = 0
         addlist = []
         try:
-            data = source["data"]
-            while data["entries"][i]:
-                tempdata = data["entries"][i]
-                tempsource = {
-                    "webpage_url": tempdata["webpage_url"],
-                    "requester": ctx.author,
-                    "title": tempdata["title"],
-                }
-                await _player.queue.put(tempsource)
-
+            for item in source:
+                await _player.queue.put(item)
                 if i <= 10:
-                    addlist.append(tempdata["title"])
+                    addlist.append(item["title"])
                 i = i + 1
+        except: pass
 
-        except:
-            pass
         try:
             if source["title"]:
                 await _player.queue.put(source)

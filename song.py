@@ -49,7 +49,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
     #รับข้อมูลจากฟังก์ชัน play แล้วแปลงข้อมูลที่ได้มาให้เป็นข้อมูลของเพลง
     #แล้วส่งข้อมูลเพลงกลับคืน
     @classmethod 
-    async def create_source(cls, ctx, search: str, *, loop, download=False):
+    async def create_source(cls, ctx, search: str, *, loop):
         loop = loop or asyncio.get_event_loop()
         
         if 'list=' in search:
@@ -60,20 +60,25 @@ class YTDLSource(discord.PCMVolumeTransformer):
             return data
 
 
-        to_run = partial(ytdl.extract_info, url=search, download=download)
+        to_run = partial(ytdl.extract_info, url=search, download=False)
         data = await loop.run_in_executor(None, to_run)
+        print("************************")
+        print(data['webpage_url'])
 
         return {
-            "webpage_url": data["webpage_url"],
-            "requester": ctx.author,
-            "title": data["title"]
+            'webpage_url': data['webpage_url'],
+            'requester': ctx.author,
+            'title': data['title'],
+            'check': 'True'
         }
 
     #สร้างข้อมูลในการ streaming เพลง
     @classmethod
     async def stream(cls, data, *, loop):
         loop = loop or asyncio.get_event_loop()
+        print(data['requester'])
         requester = data['requester']
+
 
         to_run = partial(ytdl.extract_info, url=data['webpage_url'], download=False)
         data = await loop.run_in_executor(None, to_run)
@@ -93,6 +98,7 @@ class MusicPlayer:
         "current",
         "np",
         "volume",
+        "a"
     )
 
     def __init__(self, ctx):
@@ -171,24 +177,23 @@ class songAPI:
             voice_client = get(self.bot.voice_clients, guild=ctx.guild)
 
         source = await YTDLSource.create_source(
-            ctx, search, loop=self.bot.loop, download=False
-        )
-        i = 0
+            ctx, search, loop=self.bot.loop)
+
         addlist = []
+        i = 0
+        try:
+            if source['check'] == 'True':
+                await _player.queue.put(source)
+                addlist.append(source.get("title"))
+        except: pass
+
         try:
             for item in source:
                 await _player.queue.put(item)
                 if i <= 10:
                     addlist.append(item["title"])
-                i = i + 1
+                i += 1
         except: pass
-
-        try:
-            if source["title"]:
-                await _player.queue.put(source)
-                addlist.append(source.get("title"))
-        except:
-            pass
 
         if i >= 10:
             left = f"\nและอีก `{i-10}` เพลง"

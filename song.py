@@ -53,15 +53,24 @@ class YTDLSource(discord.PCMVolumeTransformer):
         loop = loop or asyncio.get_event_loop()
         
         if 'list=' in search:
-            playlistid = search.split('=',1)
-            playlistid =playlistid[1]
+            playlistid = search.split('list=',1)
+            playlistid = playlistid[1]
+            if 'index' in playlistid:
+                playlistid = playlistid.split('&index=',1)
+                playlistid = playlistid[0]
+                
             to_run = partial(ytapi.yt_playlist,playlistid,ctx.author)
             data = await loop.run_in_executor(None, to_run)
             return data
 
+        if 'http://' in search:
+            to_run = partial(ytdl.extract_info, url=search, download=False)
+            data = await loop.run_in_executor(None, to_run)
 
-        to_run = partial(ytdl.extract_info, url=search, download=False)
-        data = await loop.run_in_executor(None, to_run)
+        else:
+            to_run = partial(ytdl.extract_info, url=f'ytsearch:{search}', download=False)
+            data = await loop.run_in_executor(None, to_run)
+            data = data['entries'][0]
 
         return {
             'webpage_url': data['webpage_url'],
@@ -74,7 +83,6 @@ class YTDLSource(discord.PCMVolumeTransformer):
     @classmethod
     async def stream(cls, data, *, loop):
         loop = loop or asyncio.get_event_loop()
-        print(data['requester'])
         requester = data['requester']
 
 
@@ -127,7 +135,10 @@ class MusicPlayer:
             except asyncio.TimeoutError:
                 return await self.destroy()
 
-            source = await YTDLSource.stream(source, loop=self.bot.loop)
+            if not isinstance(source, YTDLSource):
+                try:
+                    source = await YTDLSource.stream(source, loop=self.bot.loop)
+                except : continue
             source.volume = self.volume
             self.current = source
 
@@ -154,6 +165,8 @@ class MusicPlayer:
 
     async def destroy(self):
         await self._guild.voice_client.disconnect()
+        em = discord.Embed(title="ไม่มีใครเปิดเพลงเลย ", description="งั้นคามุยละ", color=0xF90716)
+        await self._channel.send(embed=em)
         del self._guild
 
 
@@ -181,6 +194,7 @@ class songAPI:
         i = 0
         try:
             if source['check'] == 'True':
+                print(source)
                 await _player.queue.put(source)
                 addlist.append(source.get("title"))
         except: pass

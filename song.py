@@ -309,12 +309,22 @@ class songAPI:
 
         new = []
         upcoming = list(itertools.islice(player.queue._queue, 0, player.queue.qsize()))
+        print(len(upcoming))
+        print(upcoming)
         for i in range(len(upcoming)):
+            
             item = upcoming[i]
-            new.append(item.get("title"))
-            print(item.get("title"))
-            if len(new) >= 10:
-                break
+            try:
+                new.append(item["title"])
+                if len(new) >= 10:
+                    break
+            except: 
+                if len(upcoming) == 1 :
+                    em = discord.Embed(title="ไม่มีคิวเพลงให้ดูอ่ะ", color=0xF90716)
+                    return await ctx.send(embed=em)
+                pass
+        
+
 
         if len(new) >= 10:
             left = f"\n\nและอีก `{len(upcoming)-10}` เพลง"

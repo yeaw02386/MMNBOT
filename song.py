@@ -62,7 +62,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
             data = await loop.run_in_executor(None, to_run)
             return data
 
-        if 'http://' in search:
+        if 'https://' in search:
             data = ytdl.extract_info(url=search,download=False)['id']
             to_run = partial(ytapi.yt_video,data,ctx.author)
             data = await loop.run_in_executor(None, to_run)

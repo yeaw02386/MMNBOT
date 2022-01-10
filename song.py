@@ -40,6 +40,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
         self.title = data['title']
         self.webpage_url = data['webpage_url']
         self.thumbnails = data['thumbnails']
+        self.que = data['queue']
         self.duration = dur
 
     def __getitem__(self, item: str):
@@ -49,30 +50,30 @@ class YTDLSource(discord.PCMVolumeTransformer):
     #รับข้อมูลจากฟังก์ชัน play แล้วแปลงข้อมูลที่ได้มาให้เป็นข้อมูลของเพลง
     #แล้วส่งข้อมูลเพลงกลับคืน
     @classmethod 
-    async def create_source(cls, ctx, search: str, *, loop):
+    async def create_source(cls, ctx, search: str, *, loop,que):
         loop = loop or asyncio.get_event_loop()
         
+
         if 'list=' in search:
             playlistid = search.split('list=')[1]
             if 'index' in playlistid:
                 playlistid = playlistid.split('&index=',1)[0]
                 
-            to_run = partial(ytapi.yt_playlist,playlistid,ctx.author)
-            print(playlistid)
-            data = await loop.run_in_executor(None, to_run)
-            return data
+            to_run = partial(ytapi.yt_playlist,playlistid,ctx.author,que)
+            data,que = await loop.run_in_executor(None, to_run)
+            return data,que
 
         if 'https://' in search:
             data = ytdl.extract_info(url=search,download=False)['id']
-            to_run = partial(ytapi.yt_video,data,ctx.author)
-            data = await loop.run_in_executor(None, to_run)
+            to_run = partial(ytapi.yt_video,data,ctx.author,que)
+            data,que = await loop.run_in_executor(None, to_run)
 
         else:
             data = ytdl.extract_info(url=f'ytsearch:{search}', download=False)['entries'][0]['id']
-            to_run = partial(ytapi.yt_video,data,ctx.author)
-            data = await loop.run_in_executor(None, to_run)
+            to_run = partial(ytapi.yt_video,data,ctx.author,que)
+            data,que = await loop.run_in_executor(None, to_run)
 
-        return data
+        return data,que
 
     #สร้างข้อมูลในการ streaming เพลง
     @classmethod
@@ -137,7 +138,7 @@ class MusicPlayer:
                 source,
                 after=lambda _: self.bot.loop.call_soon_threadsafe(self.next.set),
             )
-            em = discord.Embed(title="ตอนนี้เรากำลังเล่นเพลง",
+            em = discord.Embed(title=f"ตอนนี้เรากำลังเล่นเพลงของคิวที่ `{source.que}`",
             description=f"[{source.title}]({source.webpage_url})\n\n"
             f"ความยาวเพลงนี้ก็คือ `{source.duration}` แล้วก็ `{source.requester}`เป็นคนบอกเราให้เล่นเพลงนี้นะ"
             ,color=0xF90716)
@@ -178,31 +179,31 @@ class songAPI:
             await channel.connect()
             voice_client = get(self.bot.voice_clients, guild=ctx.guild)
 
-        source = await YTDLSource.create_source(
-            ctx, search, loop=self.bot.loop)
+        source,que = await YTDLSource.create_source(
+                    ctx, search, loop=self.bot.loop,que=_player.que)
 
+        _player.que = que
         addlist = []
         i = 0
         try:
             if source['check'] == 'True':
-
                 await _player.queue.put(source)
-                addlist.append(source.get("title"))
+                temp = f"คิวที่ี `{source['queue']}` : `{source['title']}`"
+                addlist.append(temp)
         except: 
             for item in source:
                 await _player.queue.put(item)
                 if i <= 10:
-                    addlist.append(item["title"])
+                    temp = f"คิวที่ี `{item['queue']}` : `{item['title']}`"
+                    addlist.append(temp)
                 i += 1
-
 
         if i >= 10:
             left = f"\nและอีก `{i-10}` เพลง"
         else:
-            left = f"\n"
+            left = ""
 
-        listsong = "\n".join(addlist)
-        listsong = f"`{listsong}`" + left + "เข้าในคิวเพลงแล้วน้า"
+        listsong = "\n".join(addlist) + left + "เข้าในคิวเพลงแล้วน้า"
 
         em = discord.Embed(title="เพิ่มเพลง", description=listsong, color=0xF90716)
         await ctx.channel.send(embed=em)
@@ -244,6 +245,7 @@ class songAPI:
         em = discord.Embed(title="เราพักเพลงแล้วนะ", color=0xF90716)
         await ctx.send(embed=em)
 
+
     #เล่นเพลงที่พักอยู่
     async def resume(self, ctx):
         voice_client = get(self.bot.voice_clients, guild=ctx.guild)
@@ -271,12 +273,14 @@ class songAPI:
         em = discord.Embed(title="กลับมาเล่นต่อแล้ว", color=0xF90716)
         await ctx.send(embed=em)
 
+
     #เตะบอทออกจากห้องเลียง
     async def leave(self, ctx):
         del self.players[ctx.guild.id]
         await ctx.voice_client.disconnect()
         em = discord.Embed(title="ออกจากห้องแล้วนะ", color=0xF90716)
         await ctx.send(embed=em)
+
 
     #แสดงคิวเพลงที่มีอยู่
     async def queueList(self, ctx):
@@ -299,7 +303,8 @@ class songAPI:
         upcoming = list(itertools.islice(player.queue._queue, 0, player.queue.qsize()))
 
         for item in upcoming:
-            new.append(item["title"])
+            temp = f"คิวที่ี `{item['queue']}` : `{item['title']}`"
+            new.append(temp)
             if len(new) >= 10:
                 break
 
@@ -308,19 +313,21 @@ class songAPI:
         else:
             left = "\n\nมีแค่นี้แหละ"
         listsong = "\n".join(new)
-        listsong = f"ตอนนี้เรากำลังเล่นเพลง `{np.title}`\n"+"เพลงต่อไปจะเป็นเพลง\n" + f"`{listsong}`" + left
+        listsong = (f"ตอนนี้เรากำลังเล่นเพลง\nคิวที่ `{np.que}` : `{np.title}`\n"
+                    +"เพลงต่อไปจะเป็นเพลง\n\n" + listsong + left)
 
         em = discord.Embed(
             title=f"คิวเพลงที่เรามีอยู่ เรียงตามนี้เลย",
             description=listsong,
             color=0xF90716,
         )
-
         await ctx.send(embed=em)
+
 
     #ข้ามเพลงที่กำลังเล่นอยู่
     async def skip(self, ctx):
         voice_client = get(self.bot.voice_clients, guild=ctx.guild)
+        player = self.get_player(ctx)
 
         if voice_client == None or not voice_client.is_connected():
             em = discord.Embed(
@@ -335,12 +342,15 @@ class songAPI:
             return
 
         voice_client.stop()
+        np = player.current
         em = discord.Embed(
-            title=f"เราข้ามเพลงแล้วนะ",
-            description=f"`{ctx.author}` เป็นคนสั่งเรานะ",
-            color=0xF90716,
+            title=f"เราข้ามเพลงคิวที่ `{np.que}`",
+            description=f"[{np.title}]({np.webpage_url})\n\n`{ctx.author}` เป็นคนสั่งเรานะ",
+            color=0xF90716
         )
+        em.set_thumbnail(np.thumbnails)
         return await ctx.send(embed=em)
+
 
     #ลบคิวเพลงที่มี
     async def clear(self, ctx):
@@ -352,6 +362,11 @@ class songAPI:
 
         while not player.queue.empty():
             player.queue.get_nowait()
-
+        player.que = 1
         em = discord.Embed(title=f"เราลบคิวเพลงให้หมดแล้วนะ", color=0xF90716)
         await ctx.send(embed=em)
+
+
+    
+
+               

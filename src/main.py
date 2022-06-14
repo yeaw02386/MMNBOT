@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from song import songAPI 
+from command import songAPI 
 from dotenv import load_dotenv
 import os
 

@@ -2,3 +2,5 @@
 
 *.env
 *debug.py
+.gitignore
+__pycache__

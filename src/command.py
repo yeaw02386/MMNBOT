@@ -184,7 +184,7 @@ class songAPI:
             color=0xF90716
         )
         em.set_thumbnail(url=np.thumbnails)
-        return await ctx.send(embed=em)
+        await ctx.send(embed=em)
 
 
     #ลบคิวเพลงที่มี

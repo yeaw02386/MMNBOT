@@ -156,11 +156,3 @@ class MusicPlayer:
         em = discord.Embed(title="ไม่มีใครเปิดเพลงเลย ", description="งั้นคามุยละ", color=0xF90716)
         await self._channel.send(embed=em)
         del self._guild
-
-
-
-
-
-    
-
-               

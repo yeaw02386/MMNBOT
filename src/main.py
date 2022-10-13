@@ -6,9 +6,9 @@ import os
 
 load_dotenv()
 token = os.getenv('TOKEN')
+intents = discord.Intents.all()
 
-
-bot = commands.Bot(command_prefix='!',help_command=None)
+bot = commands.Bot(command_prefix='!',help_command=None,intents=intents)
 
 #นำเข้า class songAPI จาก ไฟล์ song
 songsInstance = songAPI()
